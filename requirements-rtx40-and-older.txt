@@ -1,0 +1,10 @@
+# Requirements for RTX 40 series and older GPUs (CUDA compute capability sm_50-sm_90)
+# Install base requirements first: pip install -r requirements-base.txt
+# Then install PyTorch with CUDA support:
+
+torch==2.6.0+cu124
+torchvision==0.21.0+cu124
+torchaudio==2.6.0+cu124
+
+# Install with: 
+# pip install torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124 --index-url https://download.pytorch.org/whl/cu124

@@ -4,6 +4,11 @@ import torch
 from faster_whisper import WhisperModel
 from types import SimpleNamespace
 
+# Add current directory to PATH for cuDNN files
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in os.environ.get('PATH', ''):
+    os.environ['PATH'] = current_dir + os.pathsep + os.environ.get('PATH', '')
+
 # ------------------------------
 # Configuration
 # ------------------------------
@@ -138,10 +143,10 @@ def main():
             continue
 
         filepath = os.path.join(INPUT_DIR, filename)
-        print(f"\nProcessing {filename}…")
+        print(f"\nProcessing {filename}...")
 
         # 1) Transcribe original with word timestamps (default settings, no filters)
-        print("  → Transcribing original (default settings, word timestamps)…")
+        print("  -> Transcribing original (default settings, word timestamps)...")
         t0 = time.time()
         segments_orig, info = model.transcribe(
             filepath,
@@ -149,20 +154,20 @@ def main():
         )
         t1 = time.time()
         detected_lang = info.language
-        print(f"  ✔ Original transcription done in {t1 - t0:.1f}s")
-        print(f"  → Detected language: {detected_lang}")
+        print(f"  * Original transcription done in {t1 - t0:.1f}s")
+        print(f"  -> Detected language: {detected_lang}")
 
         # Post-process segments
-        print("  → Post-processing segments (splitting long, merging short)…")
+        print("  -> Post-processing segments (splitting long, merging short)...")
         processed_orig = post_process_segments(segments_orig)
 
         # Write the original-language SRT
-        print(f"  → Writing original-language SRT to '{orig_srt}'")
+        print(f"  -> Writing original-language SRT to '{orig_srt}'")
         write_srt(processed_orig, orig_srt, use_word_ts=True)
 
         # 2) If non-English, translate with default settings
         if detected_lang != "en":
-            print("  → Detected non-English audio; starting translation to English…")
+            print("  -> Detected non-English audio; starting translation to English...")
             t2 = time.time()
             segments_trans, _ = model.transcribe(
                 filepath,
@@ -170,13 +175,13 @@ def main():
                 word_timestamps=True
             )
             t3 = time.time()
-            print(f"  ✔ Translation done in {t3 - t2:.1f}s")
+            print(f"  * Translation done in {t3 - t2:.1f}s")
 
             processed_trans = post_process_segments(segments_trans)
-            print(f"  → Writing English translation SRT to '{en_srt}'")
+            print(f"  -> Writing English translation SRT to '{en_srt}'")
             write_srt(processed_trans, en_srt, use_word_ts=True)
         else:
-            print("  → Audio is already English; skipping translation.")
+            print("  -> Audio is already English; skipping translation.")
 
         print(f"Finished {filename}.")
 
