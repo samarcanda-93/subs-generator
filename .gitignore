@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Envs
+venv/
+.venv/
+env/
+whisper-env311/
+
+# Outputs & data
+out/
+data/
+*.log
+
+# Media (commit only tiny samples)
+*.wav
+*.mp3
+*.mp4
+*.mkv
+
+# Binaries & libs
+*.exe
+*.dll
+
+# Models
+*.pt
+*.pth
+*.onnx
+
+# Editors/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
