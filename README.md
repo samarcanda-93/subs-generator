@@ -72,12 +72,71 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 ## Usage
 
-1. Place your video files (`.mp4`) in the project directory
-2. Run the transcription script:
+### Basic Usage
 
+**Process specific video files:**
+```bash
+python transcribe.py video1.mp4 video2.mp4
+```
+
+**Process all videos in current directory:**
 ```bash
 python transcribe.py
 ```
+
+**Process videos from another directory:**
+```bash
+python transcribe.py --dir ./my_videos
+```
+
+### Advanced Usage
+
+**Concurrent Processing (Multiple Files Simultaneously):**
+```bash
+# Process 4 files at once (faster, requires more VRAM)
+python transcribe.py --concurrent 4 *.mp4
+
+# Use smaller model for more concurrent files
+python transcribe.py --model medium --concurrent 8 *.mp4
+```
+
+**Other Options:**
+```bash
+# Custom output directory
+python transcribe.py --output ./subtitles video.mp4
+
+# CPU-only processing (single file at a time)
+python transcribe.py --cpu-only video.mp4
+
+# Skip English translation (original language only)
+python transcribe.py --skip-translation video.mp4
+
+# English-only subtitles (translate everything to English, skip original)
+python transcribe.py --english-only video.mp4
+
+# Use different Whisper model size
+python transcribe.py --model medium video.mp4
+
+# View all available options
+python transcribe.py --help
+```
+
+### Complete CLI Options
+
+For a complete list of options, run:
+```bash
+python transcribe.py --help
+```
+
+**Available Options:**
+- `--concurrent, -c`: Number of files to process simultaneously (default: 2)
+- `--model, -m`: Whisper model size (`tiny`, `base`, `small`, `medium`, `large`, `large-v2`, `large-v3`)
+- `--output, -o`: Output directory for subtitle files (default: `./out`)
+- `--dir, -d`: Directory to scan for video files
+- `--batch-size, -b`: Segment batch size for processing (default: 32)
+- `--cpu-only`: Force CPU-only processing
+- `--skip-translation`: Skip English translation for non-English audio
+- `--english-only`: Generate only English subtitles (translate all audio)
 
 ## Output
 
@@ -86,10 +145,43 @@ The script generates subtitle files in the `./out/` directory:
 - `{filename}_orig.srt` - Original language subtitles
 - `{filename}_en.srt` - English translation (if original is non-English)
 
+## Performance & Optimization
+
+### Concurrent Processing Recommendations
+
+**Based on GPU VRAM and Model Size:**
+
+| GPU VRAM | Model | Max Concurrent Files | Command Example |
+|----------|-------|---------------------|-----------------|
+| 8GB (RTX 3070, 4060 Ti) | large-v3 | 1-2 files | `--concurrent 2` |
+| 12GB (RTX 3080 Ti, 4070 Ti) | large-v3 | 2-3 files | `--concurrent 3` |
+| 16GB (RTX 4080, 5070 Ti) | large-v3 | 3-4 files | `--concurrent 4` |
+| 24GB (RTX 4090, 5090) | large-v3 | 5-6 files | `--concurrent 6` |
+| Any GPU | medium | 2x more than large-v3 | `--model medium --concurrent 6` |
+| Any GPU | small/tiny | 4x more than large-v3 | `--model small --concurrent 12` |
+
+**CPU-Only Processing:**
+- **Limitation**: CPU mode processes only **1 file at a time** (no concurrent processing)
+- **Performance**: 5-10x slower than GPU processing
+- **Usage**: `python transcribe.py --cpu-only video.mp4`
+
+### Performance Tips
+
+1. **Start conservatively** with default `--concurrent 2`
+2. **Monitor GPU memory** usage and increase gradually
+3. **Use smaller models** (medium/small) for more concurrent processing
+4. **Out of memory?** Reduce concurrent files or use smaller model
+
 ## Configuration
 
-Edit the configuration section in `transcribe.py`:
+You can configure processing through command-line arguments (recommended) or edit `transcribe.py`:
 
+**Command-line configuration:**
+```bash
+python transcribe.py --model medium --concurrent 4 --output ./subs *.mp4
+```
+
+**File-based configuration** in `transcribe.py`:
 ```python
 MODEL_NAME       = "large-v3"        # Whisper model size
 COMPUTE_TYPE     = "float16"         # GPU: float16, CPU: int8
