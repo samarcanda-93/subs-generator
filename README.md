@@ -7,9 +7,11 @@ A Python/PyTorch suite that generates subtitles for video files. If the original
 - Automatic speech recognition with Whisper large-v3 model
 - Multi-language support with language auto-detection
 - Automatic English translation for non-English content
+- Custom target language translation (not just English)
 - GPU acceleration support for faster processing
 - Intelligent subtitle segmentation (splits long segments, merges short ones)
 - Word-level timestamp accuracy
+- AI-powered translation quality assessment and correction
 - SRT subtitle format output
 
 ## Installation
@@ -54,7 +56,8 @@ RTX 50 series GPUs have CUDA compute capability sm_120 which requires special se
 2. **Download cuDNN 9.x:**
    - Visit [NVIDIA Developer cuDNN page](https://developer.nvidia.com/cudnn)
    - Download cuDNN 9.x for CUDA 12.x
-   - Extract the following DLL files to your project root directory:
+   - Create a `lib/` directory in your project root
+   - Extract the following DLL files to the `lib/` directory:
      - `cudnn64_9.dll`
      - `cudnn_adv64_9.dll`
      - `cudnn_cnn64_9.dll`
@@ -64,11 +67,73 @@ RTX 50 series GPUs have CUDA compute capability sm_120 which requires special se
      - `cudnn_heuristic64_9.dll`
      - `cudnn_ops64_9.dll`
 
+   **Directory structure should look like:**
+   ```
+   subs-generator/
+   ├── transcribe.py
+   ├── lib/
+   │   ├── cudnn64_9.dll
+   │   ├── cudnn_adv64_9.dll
+   │   └── ... (other cuDNN files)
+   └── ...
+   ```
+
 #### For CPU-only Installation
 
 ```bash
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 ```
+
+### 4. Optional: AI Quality Assessment Setup
+
+For AI-powered translation quality assessment and correction, you'll need to set up API keys:
+
+#### Option A: Google Gemini API (Recommended)
+
+1. **Get Gemini API Key:**
+   - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Create a new API key
+   - Copy the key
+
+2. **Set Environment Variable:**
+   
+   **Windows (Command Prompt):**
+   ```cmd
+   set GEMINI_API_KEY=your_api_key_here
+   ```
+   
+   **Windows (PowerShell):**
+   ```powershell
+   $env:GEMINI_API_KEY="your_api_key_here"
+   ```
+   
+   **Linux/Mac:**
+   ```bash
+   export GEMINI_API_KEY="your_api_key_here"
+   ```
+
+3. **Permanent Setup (Windows):**
+   - Press `Win + R`, type `sysdm.cpl`, press Enter
+   - Go to Advanced → Environment Variables
+   - Add new User Variable: `GEMINI_API_KEY` = `your_api_key_here`
+
+#### Option B: Hugging Face API
+
+1. **Get Hugging Face Token:**
+   - Visit [Hugging Face Settings](https://huggingface.co/settings/tokens)
+   - Create a new token with read permissions
+   - Copy the token
+
+2. **Set Environment Variable:**
+   ```bash
+   # Windows
+   set HUGGINGFACE_API_KEY=your_token_here
+   
+   # Linux/Mac
+   export HUGGINGFACE_API_KEY="your_token_here"
+   ```
+
+**Note:** You only need one API key (Gemini or Hugging Face). Gemini provides more detailed assessments.
 
 ## Usage
 
@@ -114,6 +179,15 @@ python transcribe.py --skip-translation video.mp4
 # English-only subtitles (translate everything to English, skip original)
 python transcribe.py --english-only video.mp4
 
+# Translate to custom language (e.g., Italian)
+python transcribe.py --translate-to it video.mp4
+
+# Enable AI quality assessment for translations
+python transcribe.py --quality-check --translate-to fr video.mp4
+
+# Auto-correct low-quality translations with AI suggestions
+python transcribe.py --auto-correct --translate-to es video.mp4
+
 # Use different Whisper model size
 python transcribe.py --model medium video.mp4
 
@@ -137,6 +211,9 @@ python transcribe.py --help
 - `--cpu-only`: Force CPU-only processing
 - `--skip-translation`: Skip English translation for non-English audio
 - `--english-only`: Generate only English subtitles (translate all audio)
+- `--translate-to`: Target language for translation (default: en)
+- `--quality-check`: Enable AI-powered translation quality assessment
+- `--auto-correct`: Auto-offer corrections for low-quality translations
 
 ## Output
 
@@ -144,6 +221,7 @@ The script generates subtitle files in the `./out/` directory:
 
 - `{filename}_orig.srt` - Original language subtitles
 - `{filename}_en.srt` - English translation (if original is non-English)
+- `{filename}_{language_code}.srt` - Custom language translation (e.g., `video_it.srt` for Italian)
 
 ## Performance & Optimization
 
@@ -171,6 +249,77 @@ The script generates subtitle files in the `./out/` directory:
 2. **Monitor GPU memory** usage and increase gradually
 3. **Use smaller models** (medium/small) for more concurrent processing
 4. **Out of memory?** Reduce concurrent files or use smaller model
+
+## AI Quality Assessment & Correction
+
+The AI quality assessment feature analyzes translation quality and suggests improvements.
+
+### Features
+
+- **Quality Scoring (1-10):** Overall, accuracy, fluency, and consistency scores
+- **Issue Detection:** Identifies translation problems and inconsistencies
+- **Smart Corrections:** Suggests specific text improvements
+- **Interactive Review:** User approval required for each correction
+- **Backup Safety:** Creates `.backup` files before applying changes
+
+### Usage Examples
+
+**Basic Quality Check:**
+```bash
+# Assess translation quality (displays report only)
+python transcribe.py --quality-check --translate-to it video.mp4
+```
+
+**Auto-Correction with User Confirmation:**
+```bash
+# Assess quality and offer corrections interactively
+python transcribe.py --auto-correct --translate-to fr video.mp4
+```
+
+### Sample Quality Report
+
+```
+🔍 TRANSLATION QUALITY ASSESSMENT (Croatian -> Italian)
+============================================================
+📊 SCORES (1-10 scale):
+   Overall Quality: 7.8/10
+   Accuracy:        8.2/10
+   Fluency:         7.5/10
+   Consistency:     7.7/10
+
+⚠️ ISSUES IDENTIFIED:
+   • Inconsistent terminology for technical terms
+   • Some phrases sound unnatural in target language
+
+💡 SUGGESTIONS:
+   • Use more idiomatic expressions
+   • Maintain consistent technical vocabulary
+
+✏️ SUGGESTED CORRECTIONS (2 segments):
+   1. Original:  "La musica è molto forte"
+      Corrected: "La musica è molto intensa"
+   
+   2. Original:  "Questo video è interessante"
+      Corrected: "Questo video è davvero interessante"
+```
+
+### Interactive Correction Process
+
+When using `--auto-correct`, you'll be prompted for each suggestion:
+
+```
+🔧 CORRECTION SUGGESTIONS for video_it.srt
+============================================================
+
+1. Suggested correction:
+   Original:  "La musica è molto forte"
+   Suggested: "La musica è molto intensa"
+   Apply this correction? [y/n/s/q] (y=yes, n=no, s=skip all, q=quit): y
+   ✓ Correction will be applied
+
+✅ Applied 1/2 corrections to video_it.srt
+📁 Backup saved as: video_it.srt.backup
+```
 
 ## Configuration
 
